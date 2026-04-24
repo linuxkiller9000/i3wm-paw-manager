@@ -48,6 +48,38 @@ class ConfigParser:
         with open(self.config_path, "w") as f:
             f.writelines(self.lines)
 
+    def save(self, validate=True):
+        """Save the current config, validating first if requested."""
+        validation_failure = None
+        if validate:
+            success, message = self.validate_and_save()
+            if success:
+                return True, message
+            validation_failure = message
+
+        # Fallback direct save if validation fails or is skipped
+        self.create_backup()
+        try:
+            self.write_config_direct()
+        except PermissionError:
+            if self.write_as_root():
+                try:
+                    subprocess.run(["i3-msg", "reload"], check=False)
+                except FileNotFoundError:
+                    pass
+                return True, "Saved with root elevation"
+            return False, "Permission denied. Root access is required to write the config."
+
+        try:
+            subprocess.run(["i3-msg", "reload"], check=False)
+        except FileNotFoundError:
+            pass
+
+        if validation_failure:
+            return True, f"Saved despite validation failure: {validation_failure}"
+
+        return True, "Saved"
+
     def write_as_root(self):
         """Write the config using root elevation if normal write fails."""
         temp_path = "/tmp/i3_easyconfig_root_write"

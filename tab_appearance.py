@@ -119,8 +119,8 @@ class AppearanceTab(QWidget):
 
     def confirm_changes(self):
         self.update_parser_lines()
-        success, message = self.parser.validate_and_save()
+        success, message = self.parser.save(validate=True)
         if success:
-            QMessageBox.information(self, "Success", "Changes saved to i3 config.")
+            QMessageBox.information(self, "Success", f"Changes saved to i3 config. {message}")
         else:
             QMessageBox.critical(self, "Error", f"Failed to save config:\n{message}")

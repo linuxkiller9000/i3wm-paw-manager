@@ -161,10 +161,10 @@ class KeybindingsTab(QWidget):
             command = self.table.item(row, 2).text()
             self.parser.lines[config_index] = f"bindsym {shortcut} {command}\n"
 
-        success, message = self.parser.validate_and_save()
+        success, message = self.parser.save(validate=True)
         if success:
-            QMessageBox.information(self, "Success", "Keybindings updated and i3 reloaded!")
+            QMessageBox.information(self, "Success", f"Keybindings saved. {message}")
         else:
-            QMessageBox.critical(self, "Error", f"Failed to reload i3:\n{message}")
+            QMessageBox.critical(self, "Error", f"Failed to save keybindings:\n{message}")
             self.parser.load_config() # Revert to last safe state
 

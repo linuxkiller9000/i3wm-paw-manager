@@ -28,9 +28,9 @@ class RawEditorTab(QWidget):
         # Update parser lines with editor content
         self.parser.lines = [line + "\n" for line in self.editor.toPlainText().split("\n")]
 
-        success, message = self.parser.validate_and_save()
+        success, message = self.parser.save(validate=True)
         if success:
-            QMessageBox.information(self, "Success", "Config validated and reloaded!")
+            QMessageBox.information(self, "Success", f"Config saved. {message}")
         else:
-            QMessageBox.critical(self, "Syntax Error", f"Changes not saved. i3 reported:\n\n{message}")
+            QMessageBox.critical(self, "Error", f"Changes not saved:\n\n{message}")
             self.load_text() # Revert to last safe state

@@ -71,4 +71,9 @@ class AutostartTab(QWidget):
             is_enabled = widget.isChecked()
             self.parser.toggle_line_comment(index, is_enabled)
 
-        self.parser.validate_and_save()
+        success, message = self.parser.save(validate=True)
+        if success:
+            QMessageBox.information(self, "Success", f"Startup config saved. {message}")
+        else:
+            QMessageBox.critical(self, "Error", f"Failed to save startup config:\n{message}")
+            self.parser.load_config()
