@@ -73,7 +73,7 @@ class I3EasyConfig(QMainWindow):
         self.autostart = AutostartTab(self.parser)
         self.raw_editor = RawEditorTab(self.parser)
         self.wallpaper = WallpaperTab(self.parser)
-        self.app_theme = AppThemeTab(self)
+        self.app_theme = AppThemeTab(self, self.parser)
         self.backups = BackupManager()
 
         # Add tabs to the UI

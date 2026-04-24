@@ -6,9 +6,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 
 class AppThemeTab(QWidget):
-    def __init__(self, parent_window):
+    def __init__(self, parent_window, parser):
         super().__init__()
         self.parent_window = parent_window
+        self.parser = parser
         self.layout = QVBoxLayout(self)
         self.theme_config_path = os.path.expanduser("~/.config/i3/app_theme.json")
         
@@ -222,7 +223,7 @@ class AppThemeTab(QWidget):
             json.dump(config, f, indent=2)
 
     def apply_theme(self):
-        """Apply the selected theme to the app"""
+        """Apply the selected theme to the app and save to i3 config"""
         theme = self.combo_theme.currentText()
         opacity = self.slider_opacity.value() / 100.0
         blur = self.combo_blur.currentText()
@@ -237,10 +238,28 @@ class AppThemeTab(QWidget):
         self.parent_window.setStyleSheet(stylesheet)
         self.parent_window.setWindowOpacity(opacity)
 
-        # Save configuration
+        # Save to JSON config
         self.save_theme_config()
 
-        QMessageBox.information(self, "Success", "Theme applied successfully!")
+        # Save theme as comments to i3 config file
+        theme_comment = f"# i3-EasyConfig Theme: {theme} | Opacity: {int(opacity*100)}% | Colors: {bg_color},{text_color},{accent_color}\n"
+        
+        found_theme_line = False
+        for i, line in enumerate(self.parser.lines):
+            if line.startswith("# i3-EasyConfig Theme:"):
+                self.parser.lines[i] = theme_comment
+                found_theme_line = True
+                break
+        
+        if not found_theme_line:
+            self.parser.lines.insert(2, theme_comment)
+        
+        success, message = self.parser.save(validate=False)
+        if success:
+            QMessageBox.information(self, "Success", f"Theme applied and saved. {message}")
+        else:
+            QMessageBox.warning(self, "Warning", f"Theme applied but save failed: {message}")
+
 
     def generate_stylesheet(self, theme, opacity, blur, bg_color, text_color, accent_color):
         """Generate QSS stylesheet based on theme settings"""

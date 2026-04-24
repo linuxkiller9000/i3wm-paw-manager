@@ -1,10 +1,11 @@
 import os
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-                             QListWidget, QListWidgetItem, QFileDialog, QMessageBox, QSpinBox)
+                             QListWidget, QListWidgetItem, QFileDialog, QMessageBox)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtGui import QPixmap
 from config_parser import ConfigParser
 import subprocess
+import os
 
 class WallpaperTab(QWidget):
     def __init__(self, parser: ConfigParser):
@@ -77,7 +78,7 @@ class WallpaperTab(QWidget):
         self.preview.setAlignment(Qt.AlignCenter)
     
     def set_wallpaper(self):
-        """Set the selected wallpaper"""
+        """Set the selected wallpaper and save to i3 config"""
         if not self.selected_image:
             QMessageBox.warning(self, "Error", "Please select an image first")
             return
@@ -86,16 +87,27 @@ class WallpaperTab(QWidget):
             # Try using feh (common i3 wallpaper setter)
             subprocess.run(["feh", "--bg-scale", self.selected_image], check=True)
             
-            # Save to config
-            config_dir = os.path.dirname(self.get_wallpaper_config_path())
-            os.makedirs(config_dir, exist_ok=True)
+            # Save wallpaper path to i3 config as a comment
+            wallpaper_comment = f"# i3-EasyConfig Wallpaper: {self.selected_image}\n"
             
-            with open(self.get_wallpaper_config_path(), "w") as f:
-                f.write(self.selected_image)
+            found_wallpaper_line = False
+            for i, line in enumerate(self.parser.lines):
+                if line.startswith("# i3-EasyConfig Wallpaper:"):
+                    self.parser.lines[i] = wallpaper_comment
+                    found_wallpaper_line = True
+                    break
+            
+            if not found_wallpaper_line:
+                self.parser.lines.insert(2, wallpaper_comment)
+            
+            success, message = self.parser.save(validate=False)
+            if not success:
+                QMessageBox.warning(self, "Warning", f"Wallpaper set but config save failed: {message}")
+                return
             
             self.current_label.setText(f"Current: {os.path.basename(self.selected_image)}")
             self.load_recent_wallpapers()
-            QMessageBox.information(self, "Success", "Wallpaper set successfully!")
+            QMessageBox.information(self, "Success", "Wallpaper set and saved to config!")
             
         except FileNotFoundError:
             QMessageBox.critical(self, "Error", "feh not found. Please install feh to set wallpapers:\nsudo apt install feh")

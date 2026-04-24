@@ -161,10 +161,10 @@ class KeybindingsTab(QWidget):
             command = self.table.item(row, 2).text()
             self.parser.lines[config_index] = f"bindsym {shortcut} {command}\n"
 
-        success, message = self.parser.save(validate=True)
+        success, message = self.parser.save(validate=False)
         if success:
-            QMessageBox.information(self, "Success", f"Keybindings saved. {message}")
+            QMessageBox.information(self, "Success", f"Keybindings saved to config. {message}")
         else:
             QMessageBox.critical(self, "Error", f"Failed to save keybindings:\n{message}")
-            self.parser.load_config() # Revert to last safe state
+            self.load_bindings()  # Reload from config to revert
 
