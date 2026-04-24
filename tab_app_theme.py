@@ -194,6 +194,18 @@ class AppThemeTab(QWidget):
         self.text_color = "#cdd6f4"
         self.accent_color = "#89b4fa"
 
+    def initialize_theme_widgets(self):
+        self.combo_theme.setCurrentText(self.theme_name)
+        self.slider_opacity.setValue(self.opacity)
+        self.update_opacity_label(self.opacity)
+        self.combo_blur.setCurrentText(self.blur)
+        self.label_bg_color.setText(self.bg_color)
+        self.btn_bg_color.setStyleSheet(f"background-color: {self.bg_color};")
+        self.label_text_color.setText(self.text_color)
+        self.btn_text_color.setStyleSheet(f"background-color: {self.text_color}; color: {self.bg_color};")
+        self.label_accent_color.setText(self.accent_color)
+        self.btn_accent_color.setStyleSheet(f"background-color: {self.accent_color};")
+
     def save_theme_config(self):
         """Save theme configuration to file"""
         config = {
@@ -223,10 +235,11 @@ class AppThemeTab(QWidget):
         
         # Apply to parent window
         self.parent_window.setStyleSheet(stylesheet)
-        
+        self.parent_window.setWindowOpacity(opacity)
+
         # Save configuration
         self.save_theme_config()
-        
+
         QMessageBox.information(self, "Success", "Theme applied successfully!")
 
     def generate_stylesheet(self, theme, opacity, blur, bg_color, text_color, accent_color):

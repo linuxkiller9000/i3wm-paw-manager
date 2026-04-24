@@ -1,7 +1,62 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
-                             QTableWidgetItem, QPushButton, QLineEdit, QHeaderView, QMessageBox, QInputDialog, QDialog)
+                             QTableWidgetItem, QPushButton, QLineEdit, QHeaderView, QMessageBox, QInputDialog, QDialog, QLabel)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 from config_parser import ConfigParser
+
+class KeyCaptureDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Capture Shortcut")
+        self.setModal(True)
+        self.setFixedSize(320, 140)
+
+        layout = QVBoxLayout(self)
+        label = QLabel("Press the shortcut keys now\n(press Esc to cancel)")
+        label.setWordWrap(True)
+        layout.addWidget(label)
+
+        self.display = QLabel("Waiting for input...")
+        layout.addWidget(self.display)
+
+        self.shortcut = None
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.grabKeyboard()
+
+    def closeEvent(self, event):
+        self.releaseKeyboard()
+        super().closeEvent(event)
+
+    def reject(self):
+        self.releaseKeyboard()
+        super().reject()
+
+    def accept(self):
+        self.releaseKeyboard()
+        super().accept()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.reject()
+            return
+
+        modifiers = event.modifiers()
+        key = event.key()
+
+        if key in (Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_Super, Qt.Key_AltGr):
+            return
+
+        sequence = QKeySequence(modifiers | key).toString(QKeySequence.PortableText)
+        if sequence:
+            normalized = sequence
+            normalized = normalized.replace("Meta", "$mod").replace("Super", "$mod")
+            normalized = normalized.replace("Ctrl", "Control")
+            normalized = normalized.replace("Alt", "Mod1") if "Mod1" not in normalized else normalized
+            self.shortcut = normalized
+            self.display.setText(f"Captured: {normalized}")
+            self.accept()
 
 class KeybindingsTab(QWidget):
     def __init__(self, parser: ConfigParser):
@@ -79,11 +134,11 @@ class KeybindingsTab(QWidget):
             self.table.setRowHidden(row, not match)
 
     def add_binding(self):
-        shortcut, ok1 = QInputDialog.getText(self, "Add Keybinding", "Enter shortcut (e.g., $mod+Return):")
-        if ok1 and shortcut:
+        dialog = KeyCaptureDialog(self)
+        if dialog.exec_() == QDialog.Accepted and dialog.shortcut:
+            shortcut = dialog.shortcut
             command, ok2 = QInputDialog.getText(self, "Add Keybinding", "Enter command to execute:")
             if ok2 and command:
-                # Add new binding to config
                 new_line = f"bindsym {shortcut} {command}\n"
                 self.parser.lines.append(new_line)
                 self.load_bindings()
