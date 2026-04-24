@@ -1,11 +1,14 @@
 import os
+import shutil
 import subprocess
 
 class ConfigParser:
     def __init__(self):
         self.config_path = os.path.expanduser("~/.config/i3/config")
+        self.backup_path = self.config_path + ".bak"
         self.lines = []
         self.load_config()
+        self.ensure_header_in_config()
 
     def load_config(self):
         """Reads the file and stores each line safely in memory."""
@@ -17,6 +20,54 @@ class ConfigParser:
 
         with open(self.config_path, "r") as f:
             self.lines = f.readlines()
+
+    def ensure_header_in_config(self):
+        """Add a managed header to the config on first run."""
+        marker = "# i3-EasyConfig managed config"
+        if any(marker in line for line in self.lines):
+            return
+
+        header = [
+            marker + "\n",
+            "# This config is managed by i3-EasyConfig.\n",
+        ]
+
+        self.lines = header + self.lines
+        self.create_backup()
+        self.write_config_direct()
+
+    def create_backup(self):
+        """Create an automatic backup before modifying the config."""
+        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+        if os.path.exists(self.config_path):
+            shutil.copy2(self.config_path, self.backup_path)
+
+    def write_config_direct(self):
+        """Write config directly to the i3 config path."""
+        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+        with open(self.config_path, "w") as f:
+            f.writelines(self.lines)
+
+    def write_as_root(self):
+        """Write the config using root elevation if normal write fails."""
+        temp_path = "/tmp/i3_easyconfig_root_write"
+        with open(temp_path, "w") as f:
+            f.writelines(self.lines)
+
+        runners = [
+            ["pkexec", "cp", temp_path, self.config_path],
+            ["sudo", "cp", temp_path, self.config_path],
+        ]
+
+        for runner in runners:
+            try:
+                subprocess.run(runner, check=True)
+                return True
+            except FileNotFoundError:
+                continue
+            except subprocess.CalledProcessError:
+                continue
+        return False
 
     def get_autostart_apps(self):
         """Extracts all exec lines for autostart apps."""
@@ -84,8 +135,13 @@ class ConfigParser:
             if validation_result.returncode != 0:
                 return False, validation_result.stderr or validation_result.stdout
 
-            with open(self.config_path, "w") as f:
-                f.writelines(self.lines)
+            self.create_backup()
+            try:
+                with open(self.config_path, "w") as f:
+                    f.writelines(self.lines)
+            except PermissionError:
+                if not self.write_as_root():
+                    return False, "Permission denied. Root access is required to write the config."
 
             try:
                 subprocess.run(["i3-msg", "reload"], check=False)

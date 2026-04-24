@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                             QSlider, QComboBox, QPushButton, QGroupBox, QSpinBox)
+                             QSlider, QComboBox, QPushButton, QGroupBox, QSpinBox, QMessageBox)
 from PyQt5.QtCore import Qt
 from config_parser import ConfigParser
 
@@ -119,4 +119,8 @@ class AppearanceTab(QWidget):
 
     def confirm_changes(self):
         self.update_parser_lines()
-        self.parser.validate_and_save()
+        success, message = self.parser.validate_and_save()
+        if success:
+            QMessageBox.information(self, "Success", "Changes saved to i3 config.")
+        else:
+            QMessageBox.critical(self, "Error", f"Failed to save config:\n{message}")
