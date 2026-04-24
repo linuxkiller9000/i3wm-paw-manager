@@ -55,15 +55,43 @@ class ConfigParser:
             with open(temp_path, "w") as f:
                 f.writelines(self.lines)
 
-            # Test the syntax using i3's built-in check
-            result = subprocess.run(["i3-msg", "-C", "-c", temp_path], capture_output=True, text=True)
+            validators = [
+                (["i3-msg", "-C", "-c", temp_path], "i3-msg"),
+                (["i3", "-C", "-c", temp_path], "i3"),
+            ]
 
-            if result.returncode == 0:
-                with open(self.config_path, "w") as f:
-                    f.writelines(self.lines)
-                subprocess.run(["i3-msg", "reload"])
-                return True, "Success"
-            else:
-                return False, result.stderr
+            validation_result = None
+            for cmd, name in validators:
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                except FileNotFoundError:
+                    continue
+
+                if result.returncode == 0:
+                    validation_result = result
+                    break
+
+                stderr = (result.stderr or "").lower()
+                if "invalid option" in stderr or "unknown option" in stderr:
+                    continue
+
+                validation_result = result
+                break
+
+            if validation_result is None:
+                return False, "No valid i3 validator found on this system."
+
+            if validation_result.returncode != 0:
+                return False, validation_result.stderr or validation_result.stdout
+
+            with open(self.config_path, "w") as f:
+                f.writelines(self.lines)
+
+            try:
+                subprocess.run(["i3-msg", "reload"], check=False)
+            except FileNotFoundError:
+                pass
+
+            return True, "Success"
         except Exception as e:
             return False, str(e)

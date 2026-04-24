@@ -13,11 +13,12 @@ class AppearanceTab(QWidget):
         self.setup_window_section()
         self.layout.addStretch()
 
-        self.btn_apply = QPushButton("Apply Visual Changes")
-        self.btn_apply.clicked.connect(self.apply_changes)
-        self.layout.addWidget(self.btn_apply)
+        self.btn_ok = QPushButton("OK")
+        self.btn_ok.clicked.connect(self.confirm_changes)
+        self.layout.addWidget(self.btn_ok)
 
         self.load_current_values()
+        self.connect_live_preview()
 
     def setup_gaps_section(self):
         group = QGroupBox("i3 Gaps")
@@ -84,14 +85,18 @@ class AppearanceTab(QWidget):
                     try: self.spin_border_size.setValue(int(parts[2]))
                     except ValueError: pass
 
-    def apply_changes(self):
-        # Update values in memory
+    def connect_live_preview(self):
+        self.spin_inner.valueChanged.connect(self.update_parser_lines)
+        self.spin_outer.valueChanged.connect(self.update_parser_lines)
+        self.combo_border.currentIndexChanged.connect(self.update_parser_lines)
+        self.spin_border_size.valueChanged.connect(self.update_parser_lines)
+
+    def update_parser_lines(self):
         inner_val = self.spin_inner.value()
         outer_val = self.spin_outer.value()
         border_style = self.combo_border.currentText()
         border_size = self.spin_border_size.value()
 
-        # Helper to replace lines safely
         def replace_or_add(prefix, new_line):
             found = False
             for i, line in enumerate(self.parser.lines):
@@ -112,4 +117,6 @@ class AppearanceTab(QWidget):
             replace_or_add("default_border", "default_border none")
             replace_or_add("new_window", "new_window none")
 
+    def confirm_changes(self):
+        self.update_parser_lines()
         self.parser.validate_and_save()
