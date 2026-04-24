@@ -1,0 +1,42 @@
+QWidget {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    font-family: "JetBrains Mono", "Sans";
+}
+
+#sidebar {
+    background-color: #181825;
+    border-right: 1px solid #313244;
+}
+
+#title {
+    font-weight: bold;
+    font-size: 18px;
+    padding: 20px;
+    color: #89b4fa;
+}
+
+QListWidget {
+    border: none;
+    background: transparent;
+}
+
+QListWidget::item {
+    padding: 10px;
+    border-radius: 5px;
+}
+
+QListWidget::item:selected {
+    background-color: #89b4fa;
+    color: #11111b;
+}
+
+QPushButton {
+    background-color: #313244;
+    border-radius: 5px;
+    padding: 8px;
+}
+
+QPushButton:hover {
+    background-color: #45475a;
+}
