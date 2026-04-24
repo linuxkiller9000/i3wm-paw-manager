@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QCheckBox, QPushButton, QInputDialog, QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from config_parser import ConfigParser
 
 class AutostartTab(QWidget):
@@ -41,6 +42,11 @@ class AutostartTab(QWidget):
             # Create a custom widget with a checkbox
             widget = QCheckBox(display_text)
             widget.setChecked(not app["raw"].startswith("#"))
+            
+            # Set larger font for visibility
+            font = QFont()
+            font.setPointSize(11)
+            widget.setFont(font)
 
             # Store the original file index in the checkbox for saving later
             widget.setProperty("config_index", app["index"])
